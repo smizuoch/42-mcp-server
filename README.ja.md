@@ -33,7 +33,19 @@
     npm install
     ```
 
-3.  **環境変数を設定します:**
+3.  **42 APIクレデンシャルを取得します:**
+    42イントラネットでOAuthアプリケーションを作成し、クライアントIDとシークレットを取得する必要があります。
+    
+    1. [42 OAuth Applications](https://profile.intra.42.fr/oauth/applications/new)にアクセス
+    2. 42アカウントでログイン
+    3. アプリケーション情報を入力:
+       - **Name:** アプリケーション名を入力（例: "42 MCP Server"）
+       - **Redirect URI:** `http://localhost:8080` を入力（任意のlocalhost URLでも可）
+       - **Scopes:** 適切なスコープを選択（例: 基本アクセス用の `public`）
+    4. 「Submit」をクリックしてアプリケーションを作成
+    5. 生成された **Application ID** と **Secret** をコピー
+
+4.  **環境変数を設定します:**
     `.env.example`をコピーして`.env`ファイルを作成し、ご自身の42 APIクレデンシャルを記入してください。
     ```bash
     cp .env.example .env
@@ -43,6 +55,7 @@
     42_CLIENT_ID=YOUR_42_CLIENT_ID
     42_CLIENT_SECRET=YOUR_42_CLIENT_SECRET
     ```
+    `YOUR_42_CLIENT_ID`を手順3で取得したApplication IDに、`YOUR_42_CLIENT_SECRET`をSecretに置き換えてください。
 
 ## 使い方 (Usage)
 

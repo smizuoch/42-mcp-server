@@ -33,7 +33,19 @@ This server abstracts requests to the 42 API and provides them in the form of re
     npm install
     ```
 
-3.  **Set up environment variables:**
+3.  **Get 42 API credentials:**
+    You need to create an OAuth application on the 42 intranet to get the client ID and secret.
+    
+    1. Access [42 OAuth Applications](https://profile.intra.42.fr/oauth/applications/new)
+    2. Log in with your 42 account
+    3. Fill in the application details:
+       - **Name:** Enter a name for your application (e.g., "42 MCP Server")
+       - **Redirect URI:** Enter `http://localhost:8080` (or any localhost URL)
+       - **Scopes:** Select appropriate scopes (e.g., `public` for basic access)
+    4. Click "Submit" to create the application
+    5. Copy the generated **Application ID** and **Secret**
+
+4.  **Set up environment variables:**
     Copy `.env.example` to create a `.env` file and fill in your 42 API credentials.
     ```bash
     cp .env.example .env
@@ -43,6 +55,7 @@ This server abstracts requests to the 42 API and provides them in the form of re
     42_CLIENT_ID=YOUR_42_CLIENT_ID
     42_CLIENT_SECRET=YOUR_42_CLIENT_SECRET
     ```
+    Replace `YOUR_42_CLIENT_ID` with the Application ID and `YOUR_42_CLIENT_SECRET` with the Secret from step 3.
 
 ## Usage
 
