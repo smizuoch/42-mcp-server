@@ -294,7 +294,7 @@ server.registerTool(
       campusId: z.number().optional().describe('Campus ID'),
       active: z.boolean().default(true).describe('Filter for active (currently sitting) users only'),
       host: z.string().optional().describe('Specific host/computer name'),
-      pageSize: z.number().default(30).describe('Page size (default 30)'),
+      pageSize: z.number().default(100).describe('Page size (default 100)'),
     },
   },
   async ({ campusId, active, host, pageSize }) => {
@@ -457,7 +457,7 @@ class SimpleHttpMcpTransport {
                       campusId: { type: 'number', description: 'Campus ID' },
                       active: { type: 'boolean', description: 'Filter for active (currently sitting) users only', default: true },
                       host: { type: 'string', description: 'Specific host/computer name' },
-                      pageSize: { type: 'number', description: 'Page size (default 30)', default: 30 },
+                      pageSize: { type: 'number', description: 'Page size (default 100)', default: 100 },
                     },
                   },
                 },
@@ -576,11 +576,11 @@ class SimpleHttpMcpTransport {
               };
 
             case 'getLocations':
-              let locationsUrl = `/v2/locations?page[size]=${args.pageSize || 30}`;
+              let locationsUrl = `/v2/locations?page[size]=${args.pageSize || 100}`;
               const locationFilters: string[] = [];
               
               if (args.campusId) {
-                locationsUrl = `/v2/campus/${args.campusId}/locations?page[size]=${args.pageSize || 30}`;
+                locationsUrl = `/v2/campus/${args.campusId}/locations?page[size]=${args.pageSize || 100}`;
               }
               
               if (args.active !== false) { // default to true
