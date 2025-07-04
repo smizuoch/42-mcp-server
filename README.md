@@ -71,7 +71,7 @@ This server abstracts requests to the 42 API and provides them in the form of re
     ```bash
     npm run start
     ```
-    The server will start at `http://127.0.0.1:3000`.
+    The server will start at `http://127.0.0.1:8042`.
 
 ## VSCode Integration
 
@@ -82,15 +82,15 @@ This server abstracts requests to the 42 API and provides them in the form of re
     You'll see logs like this in the terminal:
 
     ```
-    MCP HTTP server ready on port 3000
-    MCP endpoint: http://127.0.0.1:3000/
-    Health check: http://127.0.0.1:3000/health
+    MCP HTTP server ready on port 8042
+    MCP endpoint: http://127.0.0.1:8042/
+    Health check: http://127.0.0.1:8042/health
 
     VSCode Configuration (.vscode/mcp.json):
     {
       "servers": {
         "42-api": {
-          "url": "http://127.0.0.1:3000/"
+          "url": "http://127.0.0.1:8042/"
         }
       }
     }
@@ -104,7 +104,7 @@ This server abstracts requests to the 42 API and provides them in the form of re
     {
       "servers": {
         "42-api": {
-          "url": "http://127.0.0.1:3000/"
+          "url": "http://127.0.0.1:8042/"
         }
       }
     }

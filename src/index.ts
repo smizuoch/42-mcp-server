@@ -707,7 +707,7 @@ class SimpleHttpMcpTransport {
       });
       
       // Start HTTP server
-      const PORT = parseInt(process.env.PORT || '3000', 10);
+      const PORT = parseInt(process.env.PORT || '8042', 10);
       const httpServer = app.listen(PORT, '127.0.0.1', () => {
         console.log(`MCP HTTP server ready on port ${PORT}`);
         console.log(`MCP endpoint: http://127.0.0.1:${PORT}/`);
