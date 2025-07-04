@@ -1,0 +1,39 @@
+{
+  "name": "42-mcp-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts --stdio",
+    "dev:http": "nodemon --exec ts-node src/index.ts --http",
+    "build": "tsc",
+    "start": "node dist/index.js --http",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smizuoch/42-mcp-server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/smizuoch/42-mcp-server/issues"
+  },
+  "homepage": "https://github.com/smizuoch/42-mcp-server#readme",
+  "description": "",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "dotenv": "^17.0.1",
+    "express": "^5.1.0",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.25.72"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.10",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
