@@ -213,6 +213,114 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  'getCampusUsers',
+  {
+    title: 'Get Campus Users',
+    description: 'Retrieve campus-user associations by campusId or userId',
+    inputSchema: {
+      campusId: z.number().optional().describe('Campus ID'),
+      userId: z.number().optional().describe('User ID'),
+    },
+  },
+  async ({ campusId, userId }) => {
+    let url = '/v2/campus_users';
+    if (userId) {
+      url = `/v2/users/${userId}/campus_users`;
+    } else if (campusId) {
+      url += `?filter[campus_id]=${campusId}`;
+    }
+    const campusUsers = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(campusUsers, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getBalances',
+  {
+    title: 'Get Balances',
+    description: 'Retrieve balances globally or for a specific pool (requires Advanced tutor role)',
+    inputSchema: {
+      poolId: z.number().optional().describe('Pool ID'),
+    },
+  },
+  async ({ poolId }) => {
+    let url = '/v2/balances';
+    if (poolId) {
+      url = `/v2/pools/${poolId}/balances`;
+    }
+    const balances = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(balances, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getClusters',
+  {
+    title: 'Get Clusters',
+    description: 'Retrieve clusters with optional campusId and/or name filter (requires Basic staff role)',
+    inputSchema: {
+      campusId: z.number().optional().describe('Campus ID'),
+      name: z.string().optional().describe('Substring of cluster name'),
+      pageSize: z.number().default(30).describe('Page size (default 30)'),
+    },
+  },
+  async ({ campusId, name, pageSize }) => {
+    let url = `/v2/clusters?page[size]=${pageSize}`;
+    const filters: string[] = [];
+    
+    if (campusId) {
+      filters.push(`filter[campus_id]=${campusId}`);
+    }
+    if (name) {
+      filters.push(`filter[name]=${encodeURIComponent(name)}`);
+    }
+    
+    if (filters.length > 0) {
+      url += '&' + filters.join('&');
+    }
+    
+    const clusters = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(clusters, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getLocations',
+  {
+    title: 'Get Locations',
+    description: 'Retrieve user locations (seats) with optional campus, host, and activity filters',
+    inputSchema: {
+      campusId: z.number().optional().describe('Campus ID'),
+      active: z.boolean().default(true).describe('Filter for active (currently sitting) users only'),
+      host: z.string().optional().describe('Specific host/computer name'),
+      pageSize: z.number().default(30).describe('Page size (default 30)'),
+    },
+  },
+  async ({ campusId, active, host, pageSize }) => {
+    let url = `/v2/locations?page[size]=${pageSize}`;
+    const filters: string[] = [];
+    
+    if (campusId) {
+      url = `/v2/campus/${campusId}/locations?page[size]=${pageSize}`;
+    }
+    
+    if (active) {
+      filters.push('filter[active]=true');
+    }
+    if (host) {
+      filters.push(`filter[host]=${encodeURIComponent(host)}`);
+    }
+    
+    if (filters.length > 0) {
+      url += '&' + filters.join('&');
+    }
+    
+    const locations = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(locations, null, 2) }] };
+  },
+);
+
 // -----------------------------------------------------------------------------
 // Simple HTTP MCP Transport (Manual Implementation)
 // -----------------------------------------------------------------------------
@@ -307,6 +415,52 @@ class SimpleHttpMcpTransport {
                     required: ['userId'],
                   },
                 },
+                {
+                  name: 'getCampusUsers',
+                  description: 'Retrieve campus-user associations by campusId or userId',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      campusId: { type: 'number', description: 'Campus ID' },
+                      userId: { type: 'number', description: 'User ID' },
+                    },
+                  },
+                },
+                {
+                  name: 'getBalances',
+                  description: 'Retrieve balances globally or for a specific pool (requires Advanced tutor role)',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      poolId: { type: 'number', description: 'Pool ID' },
+                    },
+                  },
+                },
+                {
+                  name: 'getClusters',
+                  description: 'Retrieve clusters with optional campusId and/or name filter (requires Basic staff role)',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      campusId: { type: 'number', description: 'Campus ID' },
+                      name: { type: 'string', description: 'Substring of cluster name' },
+                      pageSize: { type: 'number', description: 'Page size (default 30)', default: 30 },
+                    },
+                  },
+                },
+                {
+                  name: 'getLocations',
+                  description: 'Retrieve user locations (seats) with optional campus, host, and activity filters',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      campusId: { type: 'number', description: 'Campus ID' },
+                      active: { type: 'boolean', description: 'Filter for active (currently sitting) users only', default: true },
+                      host: { type: 'string', description: 'Specific host/computer name' },
+                      pageSize: { type: 'number', description: 'Page size (default 30)', default: 30 },
+                    },
+                  },
+                },
               ],
             },
             id,
@@ -344,11 +498,11 @@ class SimpleHttpMcpTransport {
               };
 
             case 'getUserProjects':
-              let url = `/v2/users/${args.userId}/projects_users`;
+              let projectsUrl = `/v2/users/${args.userId}/projects_users`;
               if (args.cursusId) {
-                url += `?filter[cursus_id]=${args.cursusId}`;
+                projectsUrl += `?filter[cursus_id]=${args.cursusId}`;
               }
-              const projects = await apiRequest<any[]>(url);
+              const projects = await apiRequest<any[]>(projectsUrl);
               return {
                 jsonrpc: '2.0',
                 result: {
@@ -363,6 +517,88 @@ class SimpleHttpMcpTransport {
                 jsonrpc: '2.0',
                 result: {
                   content: [{ type: 'text', text: JSON.stringify(coalitions, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getCampusUsers':
+              let campusUsersUrl = '/v2/campus_users';
+              if (args.userId) {
+                campusUsersUrl = `/v2/users/${args.userId}/campus_users`;
+              } else if (args.campusId) {
+                campusUsersUrl += `?filter[campus_id]=${args.campusId}`;
+              }
+              const campusUsers = await apiRequest<any[]>(campusUsersUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(campusUsers, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getBalances':
+              let balancesUrl = '/v2/balances';
+              if (args.poolId) {
+                balancesUrl = `/v2/pools/${args.poolId}/balances`;
+              }
+              const balances = await apiRequest<any[]>(balancesUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(balances, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getClusters':
+              let clustersUrl = `/v2/clusters?page[size]=${args.pageSize || 30}`;
+              const filters: string[] = [];
+              
+              if (args.campusId) {
+                filters.push(`filter[campus_id]=${args.campusId}`);
+              }
+              if (args.name) {
+                filters.push(`filter[name]=${encodeURIComponent(args.name)}`);
+              }
+              
+              if (filters.length > 0) {
+                clustersUrl += '&' + filters.join('&');
+              }
+              
+              const clusters = await apiRequest<any[]>(clustersUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(clusters, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getLocations':
+              let locationsUrl = `/v2/locations?page[size]=${args.pageSize || 30}`;
+              const locationFilters: string[] = [];
+              
+              if (args.campusId) {
+                locationsUrl = `/v2/campus/${args.campusId}/locations?page[size]=${args.pageSize || 30}`;
+              }
+              
+              if (args.active !== false) { // default to true
+                locationFilters.push('filter[active]=true');
+              }
+              if (args.host) {
+                locationFilters.push(`filter[host]=${encodeURIComponent(args.host)}`);
+              }
+              
+              if (locationFilters.length > 0) {
+                locationsUrl += '&' + locationFilters.join('&');
+              }
+              
+              const locations = await apiRequest<any[]>(locationsUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(locations, null, 2) }],
                 },
                 id,
               };
@@ -515,7 +751,11 @@ class SimpleHttpMcpTransport {
       'searchUsers',
       'getCursusLevel', 
       'getUserProjects',
-      'getCoalition'
+      'getCoalition',
+      'getCampusUsers',
+      'getBalances',
+      'getClusters',
+      'getLocations'
     ].join(', '));
     console.log('Available resources:', [
       '42://user/{id}',
