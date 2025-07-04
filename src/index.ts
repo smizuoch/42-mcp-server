@@ -424,7 +424,7 @@ class SimpleHttpMcpTransport {
   
   if (useHttp) {
     try {
-      console.log('🚀 Starting HTTP server...');
+      console.log('Starting HTTP server...');
       
       // Create Express app
       const app = express();
@@ -448,7 +448,7 @@ class SimpleHttpMcpTransport {
       // Main MCP endpoint
       app.post('/', async (req: Request, res: Response) => {
         try {
-          console.log('📨 Received MCP request:', JSON.stringify(req.body, null, 2));
+          console.log('Received MCP request:', JSON.stringify(req.body, null, 2));
           
           const response = await httpTransport.handleRequest(req.body);
           
