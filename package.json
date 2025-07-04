@@ -13,14 +13,23 @@
     "type": "git",
     "url": "git+https://github.com/smizuoch/42-mcp-server.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "42school",
+    "42api",
+    "mcp",
+    "model-context-protocol",
+    "llm",
+    "ai-agent",
+    "api-server",
+    "education",
+    "typescript"
+  ],
+  "author": "smizuoch",
   "bugs": {
     "url": "https://github.com/smizuoch/42-mcp-server/issues"
   },
   "homepage": "https://github.com/smizuoch/42-mcp-server#readme",
-  "description": "",
+  "description": "Model Context Protocol (MCP) server for 42 School API integration. Provides secure access to 42 intranet data (users, projects, campus info) for LLM agents via standardized MCP interface.",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.0",
     "dotenv": "^17.0.1",
