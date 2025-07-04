@@ -135,6 +135,109 @@ server.registerResource(
   },
 );
 
+// Attachments resource with template for specific project attachments
+const attachmentsTemplate = new ResourceTemplate('42://attachments/{projectId}', {
+  list: async () => {
+    return { 
+      resources: [] // Empty array as we don't enumerate all projects
+    };
+  },
+  complete: {
+    projectId: async () => [] // No auto-completion for project IDs
+  }
+});
+
+server.registerResource(
+  'attachments',
+  attachmentsTemplate,
+  {
+    title: 'Project Attachments',
+    description: 'Attachments (PDFs, videos, links) for a specific project',
+    mimeType: 'application/json',
+  },
+  async (_uri, variables) => {
+    const projectId = Array.isArray(variables.projectId) ? variables.projectId[0] : variables.projectId;
+    const data = await apiRequest(`/v2/projects/${projectId}/attachments`);
+    return {
+      contents: [{ uri: `42://attachments/${projectId}`, text: JSON.stringify(data, null, 2) }],
+    };
+  },
+);
+
+// All attachments resource
+server.registerResource(
+  'all-attachments',
+  '42://attachments',
+  {
+    title: 'All Attachments',
+    description: 'List of all attachments (PDFs, videos, links) in the system',
+    mimeType: 'application/json',
+  },
+  async () => {
+    const data = await apiRequest('/v2/attachments?page[size]=100');
+    return { contents: [{ uri: '42://attachments', text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+// Project resource with template for specific project
+const projectTemplate = new ResourceTemplate('42://project/{id}', {
+  list: async () => {
+    return { 
+      resources: [] // Empty array as we don't enumerate all projects
+    };
+  },
+  complete: {
+    id: async () => [] // No auto-completion for project IDs
+  }
+});
+
+server.registerResource(
+  'project',
+  projectTemplate,
+  {
+    title: 'Project Details',
+    description: 'Detailed information about a specific project',
+    mimeType: 'application/json',
+  },
+  async (_uri, variables) => {
+    const id = Array.isArray(variables.id) ? variables.id[0] : variables.id;
+    const data = await apiRequest(`/v2/projects/${id}`);
+    return {
+      contents: [{ uri: `42://project/${id}`, text: JSON.stringify(data, null, 2) }],
+    };
+  },
+);
+
+// All projects resource
+server.registerResource(
+  'all-projects',
+  '42://projects',
+  {
+    title: 'All Projects',
+    description: 'List of all projects in the system',
+    mimeType: 'application/json',
+  },
+  async () => {
+    const data = await apiRequest('/v2/projects?page[size]=100');
+    return { contents: [{ uri: '42://projects', text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+// My projects resource
+server.registerResource(
+  'my-projects',
+  '42://me/projects',
+  {
+    title: 'My Projects',
+    description: 'List of projects for the current authenticated user',
+    mimeType: 'application/json',
+  },
+  async () => {
+    const data = await apiRequest('/v2/me/projects?page[size]=100');
+    return { contents: [{ uri: '42://me/projects', text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
 // -----------------------------------------------------------------------------
 // Tools
 // -----------------------------------------------------------------------------
@@ -321,6 +424,154 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  'getAttachments',
+  {
+    title: 'Get Attachments',
+    description: 'Retrieve attachments (PDFs, videos, links) with optional project filters',
+    inputSchema: {
+      projectId: z.number().optional().describe('Project ID to filter attachments'),
+      projectSessionId: z.number().optional().describe('Project session ID to filter attachments'),
+      pageSize: z.number().default(30).describe('Page size (default 30, max 100)'),
+      sort: z.string().optional().describe('Sort field (id, created_at, updated_at, etc.)'),
+    },
+  },
+  async ({ projectId, projectSessionId, pageSize, sort }) => {
+    let url: string;
+    
+    if (projectSessionId) {
+      url = `/v2/project_sessions/${projectSessionId}/attachments`;
+    } else if (projectId) {
+      url = `/v2/projects/${projectId}/attachments`;
+    } else {
+      url = `/v2/attachments`;
+    }
+    
+    const params: string[] = [`page[size]=${Math.min(pageSize, 100)}`];
+    if (sort) {
+      params.push(`sort=${encodeURIComponent(sort)}`);
+    }
+    
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    
+    const attachments = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(attachments, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getAttachment',
+  {
+    title: 'Get Attachment Details',
+    description: 'Get detailed information about a specific attachment including PDF URLs',
+    inputSchema: {
+      attachmentId: z.number().describe('Attachment ID'),
+      projectSessionId: z.number().optional().describe('Project session ID (if accessing via project session)'),
+    },
+  },
+  async ({ attachmentId, projectSessionId }) => {
+    let url: string;
+    
+    if (projectSessionId) {
+      url = `/v2/project_sessions/${projectSessionId}/attachments/${attachmentId}`;
+    } else {
+      url = `/v2/attachments/${attachmentId}`;
+    }
+    
+    const attachment = await apiRequest<any>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(attachment, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getProjects',
+  {
+    title: 'Get Projects',
+    description: 'Retrieve projects with optional cursus or project filters',
+    inputSchema: {
+      cursusId: z.number().optional().describe('Cursus ID to filter projects'),
+      projectId: z.number().optional().describe('Parent project ID to filter child projects'),
+      pageSize: z.number().default(30).describe('Page size (default 30, max 100)'),
+      sort: z.string().optional().describe('Sort field (id, name, created_at, position, etc.)'),
+      filter: z.string().optional().describe('Filter field and value (e.g., "exam" for exam projects)'),
+    },
+  },
+  async ({ cursusId, projectId, pageSize, sort, filter }) => {
+    let url: string;
+    
+    if (cursusId) {
+      url = `/v2/cursus/${cursusId}/projects`;
+    } else if (projectId) {
+      url = `/v2/projects/${projectId}/projects`;
+    } else {
+      url = `/v2/projects`;
+    }
+    
+    const params: string[] = [`page[size]=${Math.min(pageSize, 100)}`];
+    if (sort) {
+      params.push(`sort=${encodeURIComponent(sort)}`);
+    }
+    if (filter) {
+      params.push(`filter[${encodeURIComponent(filter)}]=true`);
+    }
+    
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    
+    const projects = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getProject',
+  {
+    title: 'Get Project Details',
+    description: 'Get detailed information about a specific project',
+    inputSchema: {
+      projectId: z.number().describe('Project ID'),
+    },
+  },
+  async ({ projectId }) => {
+    const project = await apiRequest<any>(`/v2/projects/${projectId}`);
+    return { content: [{ type: 'text', text: JSON.stringify(project, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getMyProjects',
+  {
+    title: 'Get My Projects',
+    description: 'Get all projects for the current authenticated user',
+    inputSchema: {
+      cursusId: z.number().optional().describe('Cursus ID to filter projects'),
+      pageSize: z.number().default(30).describe('Page size (default 30, max 100)'),
+      sort: z.string().optional().describe('Sort field (id, name, created_at, position, etc.)'),
+    },
+  },
+  async ({ cursusId, pageSize, sort }) => {
+    let url = '/v2/me/projects';
+    
+    const params: string[] = [`page[size]=${Math.min(pageSize, 100)}`];
+    if (cursusId) {
+      params.push(`cursus_id=${cursusId}`);
+    }
+    if (sort) {
+      params.push(`sort=${encodeURIComponent(sort)}`);
+    }
+    
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    
+    const projects = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }] };
+  },
+);
+
 // -----------------------------------------------------------------------------
 // Simple HTTP MCP Transport (Manual Implementation)
 // -----------------------------------------------------------------------------
@@ -458,6 +709,68 @@ class SimpleHttpMcpTransport {
                       active: { type: 'boolean', description: 'Filter for active (currently sitting) users only', default: true },
                       host: { type: 'string', description: 'Specific host/computer name' },
                       pageSize: { type: 'number', description: 'Page size (default 100)', default: 100 },
+                    },
+                  },
+                },
+                {
+                  name: 'getAttachments',
+                  description: 'Retrieve attachments (PDFs, videos, links) with optional project filters',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      projectId: { type: 'number', description: 'Project ID to filter attachments' },
+                      projectSessionId: { type: 'number', description: 'Project session ID to filter attachments' },
+                      pageSize: { type: 'number', description: 'Page size (default 30, max 100)', default: 30 },
+                      sort: { type: 'string', description: 'Sort field (id, created_at, updated_at, etc.)' },
+                    },
+                  },
+                },
+                {
+                  name: 'getAttachment',
+                  description: 'Get detailed information about a specific attachment including PDF URLs',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      attachmentId: { type: 'number', description: 'Attachment ID' },
+                      projectSessionId: { type: 'number', description: 'Project session ID (if accessing via project session)' },
+                    },
+                    required: ['attachmentId'],
+                  },
+                },
+                {
+                  name: 'getProjects',
+                  description: 'Retrieve projects with optional cursus or project filters',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      cursusId: { type: 'number', description: 'Cursus ID to filter projects' },
+                      projectId: { type: 'number', description: 'Parent project ID to filter child projects' },
+                      pageSize: { type: 'number', description: 'Page size (default 30, max 100)', default: 30 },
+                      sort: { type: 'string', description: 'Sort field (id, name, created_at, position, etc.)' },
+                      filter: { type: 'string', description: 'Filter field and value (e.g., "exam" for exam projects)' },
+                    },
+                  },
+                },
+                {
+                  name: 'getProject',
+                  description: 'Get detailed information about a specific project',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      projectId: { type: 'number', description: 'Project ID' },
+                    },
+                    required: ['projectId'],
+                  },
+                },
+                {
+                  name: 'getMyProjects',
+                  description: 'Get all projects for the current authenticated user',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {
+                      cursusId: { type: 'number', description: 'Cursus ID to filter projects' },
+                      pageSize: { type: 'number', description: 'Page size (default 30, max 100)', default: 30 },
+                      sort: { type: 'string', description: 'Sort field (id, name, created_at, position, etc.)' },
                     },
                   },
                 },
@@ -603,6 +916,119 @@ class SimpleHttpMcpTransport {
                 id,
               };
 
+            case 'getAttachments':
+              let attachmentsUrl: string;
+              
+              if (args.projectSessionId) {
+                attachmentsUrl = `/v2/project_sessions/${args.projectSessionId}/attachments`;
+              } else if (args.projectId) {
+                attachmentsUrl = `/v2/projects/${args.projectId}/attachments`;
+              } else {
+                attachmentsUrl = `/v2/attachments`;
+              }
+              
+              const attachmentParams: string[] = [`page[size]=${Math.min(args.pageSize || 30, 100)}`];
+              if (args.sort) {
+                attachmentParams.push(`sort=${encodeURIComponent(args.sort)}`);
+              }
+              
+              if (attachmentParams.length > 0) {
+                attachmentsUrl += '?' + attachmentParams.join('&');
+              }
+              
+              const attachments = await apiRequest<any[]>(attachmentsUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(attachments, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getAttachment':
+              let attachmentUrl: string;
+              
+              if (args.projectSessionId) {
+                attachmentUrl = `/v2/project_sessions/${args.projectSessionId}/attachments/${args.attachmentId}`;
+              } else {
+                attachmentUrl = `/v2/attachments/${args.attachmentId}`;
+              }
+              
+              const attachment = await apiRequest<any>(attachmentUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(attachment, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getProjects':
+              let projectsListUrl: string;
+              
+              if (args.cursusId) {
+                projectsListUrl = `/v2/cursus/${args.cursusId}/projects`;
+              } else if (args.projectId) {
+                projectsListUrl = `/v2/projects/${args.projectId}/projects`;
+              } else {
+                projectsListUrl = `/v2/projects`;
+              }
+              
+              const projectParams: string[] = [`page[size]=${Math.min(args.pageSize || 30, 100)}`];
+              if (args.sort) {
+                projectParams.push(`sort=${encodeURIComponent(args.sort)}`);
+              }
+              if (args.filter) {
+                projectParams.push(`filter[${encodeURIComponent(args.filter)}]=true`);
+              }
+              
+              if (projectParams.length > 0) {
+                projectsListUrl += '?' + projectParams.join('&');
+              }
+              
+              const projectsList = await apiRequest<any[]>(projectsListUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(projectsList, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getProject':
+              const projectDetail = await apiRequest<any>(`/v2/projects/${args.projectId}`);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(projectDetail, null, 2) }],
+                },
+                id,
+              };
+
+            case 'getMyProjects':
+              let myProjectsUrl = '/v2/me/projects';
+              
+              const myProjectParams: string[] = [`page[size]=${Math.min(args.pageSize || 30, 100)}`];
+              if (args.cursusId) {
+                myProjectParams.push(`cursus_id=${args.cursusId}`);
+              }
+              if (args.sort) {
+                myProjectParams.push(`sort=${encodeURIComponent(args.sort)}`);
+              }
+              
+              if (myProjectParams.length > 0) {
+                myProjectsUrl += '?' + myProjectParams.join('&');
+              }
+              
+              const myProjects = await apiRequest<any[]>(myProjectsUrl);
+              return {
+                jsonrpc: '2.0',
+                result: {
+                  content: [{ type: 'text', text: JSON.stringify(myProjects, null, 2) }],
+                },
+                id,
+              };
+
             default:
               return {
                 jsonrpc: '2.0',
@@ -626,6 +1052,24 @@ class SimpleHttpMcpTransport {
                   uri: '42://campus',
                   name: '42 Campus List',
                   description: 'List of all 42 campuses worldwide',
+                  mimeType: 'application/json',
+                },
+                {
+                  uri: '42://attachments',
+                  name: 'All Attachments',
+                  description: 'List of all attachments (PDFs, videos, links) in the system',
+                  mimeType: 'application/json',
+                },
+                {
+                  uri: '42://projects',
+                  name: 'All Projects',
+                  description: 'List of all projects in the system',
+                  mimeType: 'application/json',
+                },
+                {
+                  uri: '42://me/projects',
+                  name: 'My Projects',
+                  description: 'List of projects for the current authenticated user',
                   mimeType: 'application/json',
                 },
               ],
@@ -755,12 +1199,22 @@ class SimpleHttpMcpTransport {
       'getCampusUsers',
       'getBalances',
       'getClusters',
-      'getLocations'
+      'getLocations',
+      'getAttachments',
+      'getAttachment',
+      'getProjects',
+      'getProject',
+      'getMyProjects'
     ].join(', '));
     console.log('Available resources:', [
       '42://user/{id}',
       '42://me',
-      '42://campus'
+      '42://campus',
+      '42://attachments',
+      '42://attachments/{projectId}',
+      '42://projects',
+      '42://project/{id}',
+      '42://me/projects'
     ].join(', '));
   }
 })();

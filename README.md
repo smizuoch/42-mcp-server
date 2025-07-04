@@ -116,11 +116,16 @@ This server abstracts requests to the 42 API and provides them in the form of re
 
 ### Resources
 
-| URI                 | Description                                      |
-| ------------------- | ------------------------------------------------ |
-| `42://user/{id}`    | User profile for the specified ID               |
-| `42://me`           | Profile of the currently authenticated user     |
-| `42://campus`       | List of all campuses                            |
+| URI                     | Description                                        |
+| ----------------------- | -------------------------------------------------- |
+| `42://user/{id}`        | User profile for the specified ID                 |
+| `42://me`               | Profile of the currently authenticated user       |
+| `42://campus`           | List of all campuses                              |
+| `42://attachments`      | List of all attachments                           |
+| `42://attachments/{id}` | Attachments for the specified project            |
+| `42://projects`         | List of all projects                              |
+| `42://project/{id}`     | Project details for the specified ID             |
+| `42://me/projects`      | List of projects for the authenticated user      |
 
 ### Tools
 
@@ -134,6 +139,11 @@ This server abstracts requests to the 42 API and provides them in the form of re
 | `getBalances`       | Get balance information (requires specific role).                               |
 | `getClusters`       | Get cluster information (requires specific role).                               |
 | `getLocations`      | Get user login status (seat information).                                       |
+| `getAttachments`    | Get a list of attachments for projects or project sessions.                     |
+| `getAttachment`     | Get detailed information (such as PDF URLs) for a specific attachment.          |
+| `getProjects`       | Get a list of projects (with optional Cursus and filter specifications).       |
+| `getProject`        | Get detailed information for a specific project.                                |
+| `getMyProjects`     | Get a list of projects for the authenticated user.                              |
 
 ## Tech Stack
 
