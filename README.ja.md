@@ -139,6 +139,8 @@
 | `42://projects`         | 全てのプロジェクトのリスト         |
 | `42://project/{id}`     | 指定したIDのプロジェクト詳細       |
 | `42://me/projects`      | 認証中ユーザーのプロジェクト一覧   |
+| `42://accreditations`   | 全ての認定資格のリスト             |
+| `42://accreditation/{id}` | 指定したIDの認定資格詳細         |
 
 ### ツール (Tools)
 
@@ -157,6 +159,8 @@
 | `getProjects`       | プロジェクト一覧を取得します（Cursusやフィルター指定可能）。         |
 | `getProject`        | 特定のプロジェクトの詳細情報を取得します。                           |
 | `getMyProjects`     | 認証中ユーザーのプロジェクト一覧を取得します。                       |
+| `getAccreditations` | 認定資格の一覧を取得します（ユーザー、Cursus、認証状況でフィルタリング可能）。 |
+| `getAccreditation`  | 特定の認定資格の詳細情報を取得します。                               |
 
 
 ## 技術スタック (Tech Stack)

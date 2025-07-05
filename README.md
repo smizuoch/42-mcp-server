@@ -139,6 +139,8 @@ This server abstracts requests to the 42 API and provides them in the form of re
 | `42://projects`         | List of all projects                              |
 | `42://project/{id}`     | Project details for the specified ID             |
 | `42://me/projects`      | List of projects for the authenticated user      |
+| `42://accreditations`   | List of all accreditations                        |
+| `42://accreditation/{id}` | Accreditation details for the specified ID      |
 
 ### Tools
 
@@ -157,6 +159,8 @@ This server abstracts requests to the 42 API and provides them in the form of re
 | `getProjects`       | Get a list of projects (with optional Cursus and filter specifications).       |
 | `getProject`        | Get detailed information for a specific project.                                |
 | `getMyProjects`     | Get a list of projects for the authenticated user.                              |
+| `getAccreditations` | Get a list of accreditations with optional filtering by user, cursus, validation status. |
+| `getAccreditation`  | Get detailed information for a specific accreditation.                          |
 
 ## Tech Stack
 

@@ -238,6 +238,50 @@ server.registerResource(
   },
 );
 
+// Accreditation resource with template for specific accreditation
+const accreditationTemplate = new ResourceTemplate('42://accreditation/{id}', {
+  list: async () => {
+    return { 
+      resources: [] // Empty array as we don't enumerate all accreditations
+    };
+  },
+  complete: {
+    id: async () => [] // No auto-completion for accreditation IDs
+  }
+});
+
+server.registerResource(
+  'accreditation',
+  accreditationTemplate,
+  {
+    title: 'Accreditation Details',
+    description: 'Detailed information about a specific accreditation',
+    mimeType: 'application/json',
+  },
+  async (_uri, variables) => {
+    const id = Array.isArray(variables.id) ? variables.id[0] : variables.id;
+    const data = await apiRequest(`/v2/accreditations/${id}`);
+    return {
+      contents: [{ uri: `42://accreditation/${id}`, text: JSON.stringify(data, null, 2) }],
+    };
+  },
+);
+
+// All accreditations resource
+server.registerResource(
+  'all-accreditations',
+  '42://accreditations',
+  {
+    title: 'All Accreditations',
+    description: 'List of all accreditations in the system',
+    mimeType: 'application/json',
+  },
+  async () => {
+    const data = await apiRequest('/v2/accreditations?page[size]=100');
+    return { contents: [{ uri: '42://accreditations', text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
 // -----------------------------------------------------------------------------
 // Tools
 // -----------------------------------------------------------------------------
@@ -569,6 +613,66 @@ server.registerTool(
     
     const projects = await apiRequest<any[]>(url);
     return { content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getAccreditations',
+  {
+    title: 'Get Accreditations',
+    description: 'Retrieve accreditations with optional filtering and sorting',
+    inputSchema: {
+      userId: z.number().optional().describe('Filter by user ID'),
+      cursusId: z.number().optional().describe('Filter by cursus ID'),
+      validated: z.boolean().optional().describe('Filter by validation status'),
+      pageSize: z.number().default(30).describe('Page size (default 30, max 100)'),
+      sort: z.string().optional().describe('Sort field (id, name, user_id, cursus_id, difficulty, validated, created_at, updated_at)'),
+    },
+  },
+  async ({ userId, cursusId, validated, pageSize, sort }) => {
+    let url = `/v2/accreditations`;
+    
+    const params: string[] = [`page[size]=${Math.min(pageSize, 100)}`];
+    const filters: string[] = [];
+    
+    if (userId) {
+      filters.push(`filter[user_id]=${userId}`);
+    }
+    if (cursusId) {
+      filters.push(`filter[cursus_id]=${cursusId}`);
+    }
+    if (validated !== undefined) {
+      filters.push(`filter[validated]=${validated}`);
+    }
+    if (sort) {
+      params.push(`sort=${encodeURIComponent(sort)}`);
+    }
+    
+    if (filters.length > 0) {
+      params.push(...filters);
+    }
+    
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    
+    const accreditations = await apiRequest<any[]>(url);
+    return { content: [{ type: 'text', text: JSON.stringify(accreditations, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  'getAccreditation',
+  {
+    title: 'Get Accreditation Details',
+    description: 'Get detailed information about a specific accreditation',
+    inputSchema: {
+      accreditationId: z.number().describe('Accreditation ID'),
+    },
+  },
+  async ({ accreditationId }) => {
+    const accreditation = await apiRequest<any>(`/v2/accreditations/${accreditationId}`);
+    return { content: [{ type: 'text', text: JSON.stringify(accreditation, null, 2) }] };
   },
 );
 
@@ -1204,7 +1308,9 @@ class SimpleHttpMcpTransport {
       'getAttachment',
       'getProjects',
       'getProject',
-      'getMyProjects'
+      'getMyProjects',
+      'getAccreditations',
+      'getAccreditation'
     ].join(', '));
     console.log('Available resources:', [
       '42://user/{id}',
@@ -1214,7 +1320,9 @@ class SimpleHttpMcpTransport {
       '42://attachments/{projectId}',
       '42://projects',
       '42://project/{id}',
-      '42://me/projects'
+      '42://me/projects',
+      '42://accreditations',
+      '42://accreditation/{id}'
     ].join(', '));
   }
 })();
